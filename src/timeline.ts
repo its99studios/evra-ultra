@@ -1,6 +1,6 @@
 import { TIMELINE_COMMANDS } from './commands';
 import { attr, closest, q1, qa, setHTML, svgEl, type SvgEl } from './dom';
-import { cap, clamp, DEFAULT_FMT, eraAbbr, esc, makeEngine, str, TOKENS, tpl, uid } from './engine';
+import { cap, clamp, DEFAULT_FMT, eraAbbr, esc, makeEngine, saneYear, str, TOKENS, tpl, uid } from './engine';
 import type { TimelineHost } from './host';
 import { DEFAULT_UNITS, defaultPalette, normCal, normDoc, okDay, parseCalendarImport, PRESETS, SYNC_FIELDS } from './model';
 import { dateFromProps, noteDateOf, readsAsDate, syncValue } from './sync';
@@ -2147,7 +2147,7 @@ export function mountTimeline(root: HTMLElement, host: TimelineHost, initial: Ev
 			const ys_ = S.cal.yearStart;
 			let a = int(k<HTMLInputElement>('r0').value) - ys_, b = int(k<HTMLInputElement>('r1').value) - ys_;
 			if (!Number.isFinite(a) || !Number.isFinite(b)) { toast('Enter a year.'); renderSheet(); return; } // renderSheet puts the old value back
-			const far = (y: number) => Math.abs(y + ys_) > 1e9 || !okDay(yearStartT(y)); // past what a reopened file keeps
+			const far = (y: number) => !saneYear(y + ys_) || !saneYear(y) || !okDay(yearStartT(y)); // past what a reopened file keeps
 			if (far(a) || far(b)) { toast('That year is too far out.'); renderSheet(); return; }
 			if (!(b > a)) { toast('The range has to end after it starts.'); renderSheet(); return; }
 			const cb = contentBounds();
@@ -2644,7 +2644,10 @@ export function mountTimeline(root: HTMLElement, host: TimelineHost, initial: Ev
 	function readDate(p: HTMLElement, key: string): number | null {
 		const y = parseInt(q1<HTMLInputElement>(p, `[data-d="${key}Y"]`).value, 10), ms = q1<HTMLSelectElement>(p, `[data-d="${key}M"]`), m = ms ? +ms.value : 0;
 		const d = Math.max(1, parseInt(q1<HTMLInputElement>(p, `[data-d="${key}D"]`).value, 10) || 1);
-		return isNaN(y) || Math.abs(y) > 1e9 ? null : toT(y - S.cal.yearStart, m, d - 1); // toT clamps the day to that year's real month length (keeps leap days)
+		const yr = y - S.cal.yearStart;
+		if (!saneYear(y) || !saneYear(yr)) return null;
+		const t = toT(yr, m, d - 1); // toT clamps the day to that year's real month length (keeps leap days)
+		return okDay(t) ? t : null;
 	}
 	function openEraEditor(id: string, at: At) {
 		const e = eraById(id);

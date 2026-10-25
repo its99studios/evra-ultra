@@ -51,12 +51,15 @@ eq(E.parseDateQuery('30 February 2024'), E.toT(2024, 1, 28), 'typed days past th
 	eq(doc.events[1].rel.at, doc.events[0].t, 'rel.at follows the anchor');
 }
 
-// absurd years typed or read from notes are refused
+// years are limited by JavaScript's exact integer range and usable day counts
 eq(E.parseDateQuery('99999999999999999999'), null, 'a 20-digit typed year is refused');
-eq(E.parseDateQuery('3 March 2000000000'), null, 'a typed year past a billion is refused');
+eq(E.parseDateQuery('3 March 9007199254740992'), null, 'a typed year beyond the safe integer limit is refused');
 ok(E.parseDateQuery('-1000000000') != null, 'a billion years back is fine');
+ok(E.parseDateQuery('-312000000000') != null, 'a few hundred billion years back is within the day limit');
+ok(E.parseDateQuery('312000000000-03-01') != null, 'large safe years work in ISO-style dates');
+eq(E.parseDateQuery('3 March 30000000000000'), null, 'a safe year outside the day-count limit is refused');
 eq(noteDateOf({ year: 1e20 }, doc, E), null, 'a note year of 1e20 is refused');
-eq(noteDateOf({ year: '12345678901', date: '3 March 2000' }, doc, E), null, 'an absurd note year isn\'t replaced by the date');
+eq(noteDateOf({ year: '12345678901', date: '3 March 2000' }, doc, E), E.toT(12345678901, 0, 0), 'a safe note year takes precedence over the date');
 ok(noteDateOf({ year: 2000 }, doc, E) === E.toT(2000, 0, 0), 'ordinary note years still work');
 eq(dateFromProps({ 'timeline-year': 1e20 }, doc, E, doc.events[0]), null, 'an absurd year property doesn\'t move a card');
 

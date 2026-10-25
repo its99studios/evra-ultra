@@ -23,10 +23,10 @@ export const DEFAULT_OPTS: Omit<Opts, 'sync'> = { spanStyle: 'threads', groupOve
 export const DEFAULT_UNITS = { day: 'day', month: 'month', year: 'year', years: 'years' };
 
 const int = (v: unknown, dflt: number): number => { const n = parseInt(str(v), 10); return isNaN(n) ? dflt : n; };
-/** Dates are day counts; anything this far out (about 2.7 trillion years) is a typo or a broken file, and the date maths can't stay exact past it. */
-export const DAY_LIMIT = 1e15;
+/** Dates are day counts; beyond this, the date maths can no longer represent every whole day exactly. */
+export const DAY_LIMIT = Number.MAX_SAFE_INTEGER;
 /** A usable day count: a finite number within DAY_LIMIT. */
-export const okDay = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && Math.abs(v) < DAY_LIMIT;
+export const okDay = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && Math.abs(v) <= DAY_LIMIT;
 
 /** Older or hand-written calendars, before months had their own lengths. */
 interface RawCal extends Partial<Omit<Calendar, 'months' | 'leaps'>> {

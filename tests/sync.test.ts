@@ -63,7 +63,8 @@ eq(noteDateOf({ 'timeline-year': 36, 'timeline-month': 'Ember', day: 9 }, doc, E
 eq(noteDateOf({ date: '14 Frost 412' }, doc, E), E.toT(412, 9, 13), 'a date property');
 eq(noteDateOf({ tags: ['x'] }, doc, E), null, 'undated notes are skipped');
 // a generic date property that doesn't read as a date is skipped, not guessed
-for (const bad of ['tomorrow', 'version 2', 'see chapter 3', 'Q3 2024', '99999999999999999999', '12345678901 Frost', 'n/a', '1 2 3 4', '3 Blorp 412']) eq(noteDateOf({ date: bad }, doc, E), null, `date "${bad}" is skipped`);
+for (const bad of ['tomorrow', 'version 2', 'see chapter 3', 'Q3 2024', '99999999999999999999', 'n/a', '1 2 3 4', '3 Blorp 412']) eq(noteDateOf({ date: bad }, doc, E), null, `date "${bad}" is skipped`);
+eq(noteDateOf({ date: '12345678901 Frost' }, doc, E), E.toT(12345678901, 9, 0), 'a safe high-year date is read');
 eq(noteDateOf({ date: 1e20 }, doc, E), null, 'a numeric date of 1e20 is skipped');
 eq(noteDateOf({ Date: 'Frost 412' }, doc, E), E.toT(412, 9, 0), 'month and year');
 eq(noteDateOf({ date: '15th of Frost, Year 412' }, doc, E), E.toT(412, 9, 14), 'ordinals and the year unit');

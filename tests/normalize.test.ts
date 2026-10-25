@@ -1,11 +1,14 @@
 import { makeEngine } from '../src/engine';
-import { checkFormat, defaultCal, normCal, normDoc, sampleDoc, UnsupportedFile } from '../src/model';
+import { checkFormat, defaultCal, normCal, normDoc, okDay, sampleDoc, UnsupportedFile } from '../src/model';
 import type { EvraDoc } from '../src/types';
 import { done, eq, ok } from './harness';
 
 const clone = <T>(x: T): T => JSON.parse(JSON.stringify(x)) as T;
 /** normDoc run twice gives the same document as once. */
 const idem = (raw: unknown, msg: string) => { const a = normDoc(clone(raw)); ok(JSON.stringify(normDoc(clone(a))) === JSON.stringify(a), msg + ' (idempotent)'); return a; };
+
+ok(okDay(Number.MAX_SAFE_INTEGER), 'the largest safe day count is usable');
+ok(!okDay(Number.MAX_SAFE_INTEGER + 1), 'day counts beyond the safe integer limit are rejected');
 
 // 1. absurd dates can't hang the engine
 {

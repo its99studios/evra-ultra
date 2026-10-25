@@ -6,8 +6,8 @@ import type { Calendar, Era, EvraDoc, EvraEvent, Formats, LeapRule } from './typ
    Every label comes from an editable template; the tokens are listed in TOKENS. */
 
 export const uid = (): string => Math.random().toString(36).slice(2, 9);
-/** A year typed or read from a note that the date maths can use: a whole number within a billion of zero. */
-export const saneYear = (y: number): boolean => Number.isSafeInteger(y) && Math.abs(y) <= 1e9;
+/** A year typed or read from a note that the date maths can use without losing integer precision. */
+export const saneYear = (y: number): boolean => Number.isSafeInteger(y);
 export const clamp = (v: number, a: number, b: number): number => Math.max(a, Math.min(b, v));
 export const cap = (s: string): string => (s ? s[0].toUpperCase() + s.slice(1) : '');
 /** Any plain value as text; objects become empty. */
@@ -339,11 +339,12 @@ export function makeEngine(getDoc: () => EvraDoc) {
 		q = q.trim().toLowerCase();
 		if (!q) return null;
 		// year-month(-day), as in ISO dates: "2024-05-01", "2024/05/01", "2024-05"; the month is a 1-based number into this calendar's months
-		const iso = /^(-?\d{1,9})([-/])(\d{1,2})(?:\2(\d{1,2}))?(?![\d/-])/.exec(q);
+		const iso = /^(-?\d{1,16})([-/])(\d{1,2})(?:\2(\d{1,2}))?(?![\d/-])/.exec(q);
 		if (iso) {
 			const y = Number(iso[1]), mo = Number(iso[3]) - 1, d = iso[4] != null ? Math.max(0, Number(iso[4]) - 1) : 0;
-			if (!saneYear(y) || mo < 0 || mo >= c.months.length) return null;
-			return toT(y - c.yearStart, mo, d);
+			if (!saneYear(y) || !saneYear(y - c.yearStart) || mo < 0 || mo >= c.months.length) return null;
+			const t = toT(y - c.yearStart, mo, d);
+			return Number.isFinite(t) && Math.abs(t) <= Number.MAX_SAFE_INTEGER ? t : null;
 		}
 		const negWord = c.fmt.yearNeg ? /\{Y\}\s+(\S+)/.exec(c.fmt.yearNeg) : null;
 		// the word as a whole token, so "BE" doesn't match inside "Ember" or "September"
@@ -360,7 +361,10 @@ export function makeEngine(getDoc: () => EvraDoc) {
 		else y = nums[nums.length - 1];
 		if (!saneYear(y)) return null;
 		if (neg) y = -y;
-		return toT(y - c.yearStart, Math.max(0, m), d);
+		const yr = y - c.yearStart;
+		if (!saneYear(yr)) return null;
+		const t = toT(yr, Math.max(0, m), d);
+		return Number.isFinite(t) && Math.abs(t) <= Number.MAX_SAFE_INTEGER ? t : null;
 	}
 	return {
 		ci, reset, yearStartC, monthLens, yearOfC, yearStartT, yearOf, dpy, partsC, parts, toT, nearestYearStart, eraTopAt, eraVals,

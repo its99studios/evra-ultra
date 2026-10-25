@@ -1,5 +1,5 @@
 import { clamp, eraAbbr, saneYear, str, type Engine } from './engine';
-import { SYNC_FIELDS } from './model';
+import { okDay, SYNC_FIELDS } from './model';
 import type { EvraDoc, EvraEvent, SyncKey } from './types';
 
 /* Note properties (optional, off by default).
@@ -67,7 +67,7 @@ export function dateFromProps(fm: Record<string, unknown>, doc: EvraDoc, E: Engi
 	let yr = cur.yr, m = cur.m, d = cur.d;
 	// the exact key first, then any capitalisation of it, as noteDateOf reads them
 	const get = (key: string): unknown => (pr[key] != null ? pr[key] : low[key.toLowerCase()]);
-	if (f.year.on && get(f.year.key) != null) { const n = parseInt(str(get(f.year.key)), 10); if (saneYear(n)) yr = n - doc.cal.yearStart; }
+	if (f.year.on && get(f.year.key) != null) { const n = parseInt(str(get(f.year.key)), 10); if (saneYear(n) && saneYear(n - doc.cal.yearStart)) yr = n - doc.cal.yearStart; }
 	if (f.month.on && get(f.month.key) != null && E.ci().M > 1) {
 		const v = str(get(f.month.key)).toLowerCase(), i = doc.cal.months.findIndex((x, j) => E.monthName(j).toLowerCase() === v), n = parseInt(v, 10);
 		m = i >= 0 ? i : n >= 1 && n <= E.ci().M ? n - 1 : m;
@@ -75,7 +75,7 @@ export function dateFromProps(fm: Record<string, unknown>, doc: EvraDoc, E: Engi
 	if (f.day.on && get(f.day.key) != null) { const n = parseInt(str(get(f.day.key)), 10); if (n >= 1) d = n - 1; }
 	// toT keeps the day within this month in this year, so a leap day stays a leap day
 	const t = E.toT(yr, m, d);
-	return t === ev.t ? null : t;
+	return t === ev.t || !okDay(t) ? null : t;
 }
 
 /** Reads a year (and optionally month and day) from a note's properties, or a date property like "14 Frost 412". */
@@ -93,7 +93,10 @@ export function noteDateOf(fm: Record<string, unknown>, doc: EvraDoc, E: Engine)
 			const i = doc.cal.months.findIndex((x, j) => E.monthName(j).toLowerCase() === s(m).toLowerCase());
 			mi = i >= 0 ? i : clamp((parseInt(s(m), 10) || 1) - 1, 0, doc.cal.months.length - 1);
 		}
-		return E.toT(yn - doc.cal.yearStart, mi, d != null ? Math.max(0, (parseInt(s(d), 10) || 1) - 1) : 0);
+		const yr = yn - doc.cal.yearStart;
+		if (!saneYear(yr)) return null;
+		const t = E.toT(yr, mi, d != null ? Math.max(0, (parseInt(s(d), 10) || 1) - 1) : 0);
+		return okDay(t) ? t : null;
 	}
 	return ds != null && typeof ds !== 'object' && readsAsDate(s(ds), doc, E) ? E.parseDateQuery(s(ds)) : null;
 }
