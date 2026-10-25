@@ -20,6 +20,11 @@ const mt = E.genTicks({ u: 'm', k: 1, len: 30 }, E.toT(2024, 0, 0), E.toT(2024, 
 ok(mt.length === 12 && mt[2] - mt[1] === 29, 'month ticks follow the leap February');
 const yt = E.genTicks({ u: 'y', k: 10, len: 3652 }, E.toT(1995, 0, 0), E.toT(2031, 0, 0));
 ok(yt.length === 4 && yt[0] === E.yearStartT(2000) && yt[3] === E.yearStartT(2030), 'decade ticks land on year starts');
+const hugeStart = E.yearStartT(-312_000_000_000), hugeEnd = E.yearStartT(4096);
+const hugeScale = (800 * 0.8) / (hugeEnd - hugeStart), hugeTicks = E.pickTicks(hugeScale);
+const hugeMarks = E.genTicks(hugeTicks.major, hugeStart, hugeEnd, 200);
+ok(hugeTicks.major.k > 1e6 && hugeTicks.major.len * hugeScale >= 74, 'very large ranges choose readable year tick intervals');
+ok(hugeMarks.includes(E.yearStartT(0)), 'very large ranges generate year-zero marks');
 doc.cal.weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 doc.cal.weekStart = (((0 - E.toT(2024, 0, 0)) % 7) + 7) % 7; // 1 January 2024 was a Monday
 eq(E.weekday(E.toT(2024, 1, 28)), 'Thursday', '29 February 2024 was a Thursday');

@@ -236,7 +236,9 @@ export function makeEngine(getDoc: () => EvraDoc) {
 		const c = ci(), out: TickSpec[] = [];
 		[1, 5, 10].forEach((k) => { if (k < c.maxM) out.push({ u: 'd', k, len: k }); });
 		if (c.M > 1) [1, 2, 3, 4, 6].forEach((k) => { if (k < c.M && c.M % k === 0) out.push({ u: 'm', k, len: c.avgM * k }); });
-		[1, 2, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 1e4, 2.5e4, 5e4, 1e5, 2.5e5, 1e6].forEach((k) => out.push({ u: 'y', k, len: c.Yavg * k }));
+		[1, 2, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 1e4, 2.5e4, 5e4, 1e5, 2.5e5, 1e6,
+			2.5e6, 5e6, 1e7, 2.5e7, 5e7, 1e8, 2.5e8, 5e8, 1e9, 2.5e9, 5e9, 1e10, 2.5e10, 5e10,
+			1e11, 2.5e11, 5e11, 1e12].forEach((k) => out.push({ u: 'y', k, len: c.Yavg * k }));
 		return out;
 	}
 	const RANK = { d: 0, m: 1, y: 2 };
