@@ -1935,6 +1935,13 @@ export function mountTimeline(root: HTMLElement, host: TimelineHost, initial: Ev
 		const v = vals(sampleT(kind as Kind));
 		return tpl(kind === 'day' ? f.dateDay : kind === 'month' ? f.dateMonth : f.dateYear, v);
 	}
+	function safeFmtPreview(kind: string): string {
+		try { return fmtPreview(kind); }
+		catch (error) {
+			console.error(`Evra couldn't render the ${kind} format preview.`, error);
+			return 'Preview unavailable';
+		}
+	}
 	const field = (k: string, label: string, value: string, extra = '') => `<label class="fld"><span>${label}</span><input type="text" data-k="${k}" value="${esc(value)}" ${extra}></label>`;
 	const X_BTN = ICON.x;
 	function renderSheet() {
@@ -1962,7 +1969,7 @@ export function mountTimeline(root: HTMLElement, host: TimelineHost, initial: Ev
 		} else if (sheetTab === 'formats') {
 			h = `<section><h4>Tokens</h4><p class="note">Click a token to add it to the field you were last editing.</p><div class="chips">${TOKENS.map(([t, d]) => `<button data-tok="${t}" title="${esc(d)}">${t}</button>`).join('')}</div>
 			<dl class="toks">${TOKENS.map(([t, d]) => `<dt>${t}</dt><dd>${esc(d)}</dd>`).join('')}</dl></section>
-			${FMT_FIELDS.map(([title, rows]) => `<section><h4>${title}</h4>${rows.map(([k, label, kind]) => `<label class="fld"><span>${label}</span><input type="text" data-fmt="${k}" data-kind="${kind}" value="${esc(c.fmt[k])}" spellcheck="false"><output class="prev" data-prev="${kind}">${esc(fmtPreview(kind))}</output></label>`).join('')}
+			${FMT_FIELDS.map(([title, rows]) => `<section><h4>${title}</h4>${rows.map(([k, label, kind]) => `<label class="fld"><span>${label}</span><input type="text" data-fmt="${k}" data-kind="${kind}" value="${esc(c.fmt[k])}" spellcheck="false"><output class="prev" data-prev="${kind}">${esc(safeFmtPreview(kind))}</output></label>`).join('')}
 			${title === 'Spans' ? `<label class="chk"><input type="checkbox" data-k="sShort" ${c.fmt.shortRange ? 'checked' : ''}> Shorten whole-${esc(c.units.year)} spans (${esc(tpl(c.fmt.year, { Y: '30–44', U: cap(c.units.year) }))})</label>` : ''}</section>`).join('')}
 			<div class="rowx"><button class="btn" data-k="fReset">Reset all formats</button></div>`;
 		} else if (sheetTab === 'timeline') {
@@ -2040,7 +2047,7 @@ export function mountTimeline(root: HTMLElement, host: TimelineHost, initial: Ev
 				if (redraw && changed) later(() => { if (!sheet.hidden) renderSheet(); }, 0);
 			});
 		};
-		const refreshPrev = () => qq('[data-prev]').forEach((o) => (o.textContent = fmtPreview(o.dataset.prev)));
+		const refreshPrev = () => qq('[data-prev]').forEach((o) => (o.textContent = safeFmtPreview(o.dataset.prev)));
 		const int = (v: string) => parseInt(v, 10);
 		// calendar
 		const ps = k<HTMLSelectElement>('sPreset');

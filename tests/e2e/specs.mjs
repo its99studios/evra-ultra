@@ -385,6 +385,19 @@ test('formats: tokens, live preview and reset', async (p, h, t) => {
 	const r = await h.sheet('[data-k=fReset]'); await p.click(r.x, r.y); await p.sleep(200);
 	t.eq((await h.doc()).cal.fmt.year, '{U} {Y}', 'reset');
 });
+test('formats: a preview error does not block the settings tab', async (p, h, t) => {
+	await h.open(); await h.openSheet('calendar');
+	const yearStart = (await h.doc()).cal.yearStart;
+	await p.ev(`(() => { const c = ${h.tl}.getDoc().cal; Object.defineProperty(c, 'yearStart', { configurable: true, get() { throw new Error('test preview failure'); } }); window.__fmtPreviewErrors = []; window.__fmtPreviewConsole = console.error; console.error = (...args) => window.__fmtPreviewErrors.push(args[0]); })()`);
+	try {
+		const tab = await p.at(`${A} [data-tab=formats]`); await p.click(tab.x, tab.y); await p.sleep(150);
+		t.ok(await p.ev(`!!document.querySelector('${A} .sheet-body [data-fmt=year]')`), 'format fields render');
+		t.eq(await p.ev(`document.querySelector('${A} .sheet-body [data-prev=yearPos]').textContent`), 'Preview unavailable', 'failed preview is explicit');
+		t.ok(await p.ev('window.__fmtPreviewErrors.length > 0'), 'preview error is logged');
+	} finally {
+		await p.ev(`(() => { const c = ${h.tl}.getDoc().cal; Object.defineProperty(c, 'yearStart', { configurable: true, enumerable: true, writable: true, value: ${yearStart} }); console.error = window.__fmtPreviewConsole; delete window.__fmtPreviewErrors; delete window.__fmtPreviewConsole; })()`);
+	}
+});
 test('timeline settings: name, direction, range, snapping, now', async (p, h, t) => {
 	await h.open(); await h.openSheet('timeline');
 	const n = await h.sheet('[data-k=tName]'); await p.click(n.x, n.y); await p.key('a', 'ctrl'); await p.type('Veld history'); await p.key('Tab'); await p.sleep(200);
